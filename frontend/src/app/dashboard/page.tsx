@@ -118,7 +118,9 @@ export default function Dashboard() {
     setTempPhosphorus(land?.phosphorus ?? "");
     setTempPotassium(land?.potassium ?? "");
     setTempPH(land?.pH ?? "");
-  }, [activeLandId, lands]);
+    // Intentionally not depending on `lands` to avoid resetting while editing due to polling updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLandId]);
 
   if (loading) return null;
 
