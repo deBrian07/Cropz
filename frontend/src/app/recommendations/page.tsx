@@ -49,12 +49,15 @@ export default function RecommendationsPage() {
     );
   }
 
-  const Pill = ({ pct }: { pct: number }) => (
-    <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full bg-gradient-to-b from-neutral-900 to-black text-white shadow-xl">
-      <div className="text-3xl font-bold">{pct}%</div>
-      <div className="text-[10px] tracking-widest text-emerald-300 mt-1">STRONG MATCH</div>
-    </div>
-  );
+  const Pill = ({ pct }: { pct: number }) => {
+    const label = pct >= 90 ? "STRONG MATCH" : pct >= 70 ? "GOOD MATCH" : "WEAK MATCH";
+    return (
+      <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full bg-gradient-to-b from-neutral-900 to-black text-white shadow-xl">
+        <div className="text-3xl font-bold">{pct}%</div>
+        <div className="text-[10px] tracking-widest text-emerald-300 mt-1">{label}</div>
+      </div>
+    );
+  };
 
   return (
     <div className="relative min-h-screen px-6 py-16 max-w-6xl mx-auto text-gray-900 dark:text-gray-100">
