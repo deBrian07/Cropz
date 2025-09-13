@@ -8,7 +8,15 @@ import Modal from "@/components/Modal";
 export default function Dashboard() {
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lands, setLands] = useState<{ id: string; name: string; soilType?: string }[]>([]);
+  const [lands, setLands] = useState<{
+    id: string;
+    name: string;
+    soilType?: string;
+    nitrogen?: number;
+    phosphorus?: number;
+    potassium?: number;
+    pH?: number;
+  }[]>([]);
   const [activeLandId, setActiveLandId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [tempName, setTempName] = useState("");
@@ -17,6 +25,11 @@ export default function Dashboard() {
   const [editName, setEditName] = useState("");
   const [editNewSoilType, setEditNewSoilType] = useState<string | undefined>(undefined);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [landStep, setLandStep] = useState<"overview" | "nutrients">("overview");
+  const [tempNitrogen, setTempNitrogen] = useState<string>("");
+  const [tempPhosphorus, setTempPhosphorus] = useState<string>("");
+  const [tempPotassium, setTempPotassium] = useState<string>("");
+  const [tempPH, setTempPH] = useState<string>("");
 
   useEffect(() => {
     if (!auth) {
@@ -29,6 +42,16 @@ export default function Dashboard() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!activeLandId) return;
+    setLandStep("overview");
+    const land = lands.find((l) => l.id === activeLandId);
+    setTempNitrogen(land?.nitrogen !== undefined ? String(land.nitrogen) : "");
+    setTempPhosphorus(land?.phosphorus !== undefined ? String(land.phosphorus) : "");
+    setTempPotassium(land?.potassium !== undefined ? String(land.potassium) : "");
+    setTempPH(land?.pH !== undefined ? String(land.pH) : "");
+  }, [activeLandId, lands]);
 
   if (loading) return null;
 
@@ -74,6 +97,32 @@ export default function Dashboard() {
   const openDeleteForActive = () => {
     if (!activeLandId) return;
     setDeleteOpen(true);
+  };
+
+  const openNutrientInputs = () => {
+    setLandStep("nutrients");
+  };
+
+  const saveNutrientInputs = () => {
+    if (!activeLandId) return;
+    const nitrogen = tempNitrogen.trim() === "" ? undefined : Number(tempNitrogen);
+    const phosphorus = tempPhosphorus.trim() === "" ? undefined : Number(tempPhosphorus);
+    const potassium = tempPotassium.trim() === "" ? undefined : Number(tempPotassium);
+    const pH = tempPH.trim() === "" ? undefined : Number(tempPH);
+    setLands((prev) =>
+      prev.map((l) =>
+        l.id === activeLandId
+          ? {
+              ...l,
+              nitrogen: Number.isNaN(nitrogen as number) ? l.nitrogen : (nitrogen as number | undefined),
+              phosphorus: Number.isNaN(phosphorus as number) ? l.phosphorus : (phosphorus as number | undefined),
+              potassium: Number.isNaN(potassium as number) ? l.potassium : (potassium as number | undefined),
+              pH: Number.isNaN(pH as number) ? l.pH : (pH as number | undefined),
+            }
+          : l
+      )
+    );
+    setLandStep("overview");
   };
 
   const confirmDelete = () => {
@@ -135,16 +184,75 @@ export default function Dashboard() {
                           <button onClick={openDeleteForActive} className="px-3 py-2 rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20">Delete</button>
                         </div>
                       </div>
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="rounded-xl border p-4 border-black/10 dark:border-white/10">
-                          <div className="text-sm text-gray-600 dark:text-gray-300">Soil texture</div>
-                          <div className="text-lg font-medium">{active.soilType ?? "Unknown"}</div>
+
+                      {landStep === "overview" ? (
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="rounded-xl border p-4 border-black/10 dark:border-white/10">
+                            <div className="text-sm text-gray-600 dark:text-gray-300">Soil texture</div>
+                            <div className="text-lg font-medium">{active.soilType ?? "Unknown"}</div>
+                          </div>
+                          <button
+                            onClick={openNutrientInputs}
+                            className="text-left rounded-xl border p-4 border-black/10 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-neutral-800 transition"
+                          >
+                            <div className="text-sm text-gray-600 dark:text-gray-300">Next</div>
+                            <div className="text-lg font-medium">Enter soil health variables</div>
+                          </button>
                         </div>
-                        <div className="rounded-xl border p-4 border-black/10 dark:border-white/10">
-                          <div className="text-sm text-gray-600 dark:text-gray-300">Next</div>
-                          <div className="text-lg font-medium">Crop suggestions coming soon</div>
+                      ) : (
+                        <div className="mt-4">
+                          <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">Soil health variables</div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nitrogen</label>
+                              <input
+                                type="number"
+                                value={tempNitrogen}
+                                onChange={(e) => setTempNitrogen(e.target.value)}
+                                placeholder="e.g., 50"
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phosphorus</label>
+                              <input
+                                type="number"
+                                value={tempPhosphorus}
+                                onChange={(e) => setTempPhosphorus(e.target.value)}
+                                placeholder="e.g., 30"
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Potassium</label>
+                              <input
+                                type="number"
+                                value={tempPotassium}
+                                onChange={(e) => setTempPotassium(e.target.value)}
+                                placeholder="e.g., 40"
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">pH</label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="14"
+                                value={tempPH}
+                                onChange={(e) => setTempPH(e.target.value)}
+                                placeholder="e.g., 6.5"
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4 flex justify-end gap-3">
+                            <button onClick={() => setLandStep("overview")} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-neutral-800">Back</button>
+                            <button onClick={saveNutrientInputs} className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">Save</button>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })()
