@@ -62,3 +62,17 @@ class RecommendRes(BaseModel):
     recommendations: list[CropOut]
 
 
+# Rotation schemas
+class RotationReq(BaseModel):
+    ph: float = Field(..., ge=0, le=14)
+    N: float = Field(..., description="Nitrogen content in soil")
+    P: float = Field(..., description="Phosphorus content in soil")
+    K: float = Field(..., description="Potassium content in soil")
+
+
+class RotationYearOptions(BaseModel):
+    Year1_options: list[str]
+    Year2_options: list[str]
+    Year3_options: list[str]
+    Year4_options: list[str]
+

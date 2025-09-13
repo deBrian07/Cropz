@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .schemas import SoilInput, ScoredCrop, RecommendReq, CropOut, RecommendRes
+from .schemas import SoilInput, ScoredCrop, RecommendReq, CropOut, RecommendRes, RotationReq, RotationYearOptions
 from .scoring import score_crops
+from .rotation import compute_rotation_options
 import sys
 from pathlib import Path
 
@@ -78,4 +79,14 @@ async def recommend(req: RecommendReq):
         print(f"Error in ML recommendation: {e}")
         return {"recommendations": []}
 
+
+@app.post("/rotation", response_model=RotationYearOptions)
+async def rotation(req: RotationReq):
+    """Return 4-year crop rotation options derived from N/P/K and pH."""
+    try:
+        options = compute_rotation_options(N=req.N, P=req.P, K=req.K, ph=req.ph)
+        return options
+    except Exception as e:
+        print(f"Error in rotation endpoint: {e}")
+        return {f"Year{i}_options": [] for i in range(1, 5)}
 
