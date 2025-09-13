@@ -1,22 +1,26 @@
 "use client";
-import { useEffect, useState } from "react";
-import { auth } from "@/lib/firebase";
+import { useEffect, useRef, useState } from "react";
+import { auth, rtdb } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { get, ref, set, update, remove } from "firebase/database";
 import SoilTextureWizard, { SoilTextureWizardResult } from "@/components/SoilTextureWizard";
 import Modal from "@/components/Modal";
+
+type Land = {
+  id: string;
+  name: string;
+  soilType?: string;
+  nitrogen?: number;
+  phosphorus?: number;
+  potassium?: number;
+  pH?: number;
+};
 
 export default function Dashboard() {
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lands, setLands] = useState<{
-    id: string;
-    name: string;
-    soilType?: string;
-    nitrogen?: number;
-    phosphorus?: number;
-    potassium?: number;
-    pH?: number;
-  }[]>([]);
+  const [uid, setUid] = useState<string | null>(null);
+  const [lands, setLands] = useState<Land[]>([]);
   const [activeLandId, setActiveLandId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [tempName, setTempName] = useState("");
@@ -38,10 +42,51 @@ export default function Dashboard() {
     }
     const unsub = onAuthStateChanged(auth, (u) => {
       setName(u?.displayName ?? null);
+      setUid(u?.uid ?? null);
       setLoading(false);
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!rtdb || !uid) return;
+    const landsRef = ref(rtdb, `users/${uid}/lands`);
+
+    const fetchLands = async () => {
+      try {
+        const snap = await get(landsRef);
+        const docs: Land[] = snap.exists()
+          ? Object.entries(snap.val() as Record<string, Partial<Land>>).map(([id, data]) => ({
+              id,
+              name: (data.name as string) ?? "",
+              soilType: data.soilType,
+              nitrogen: data.nitrogen,
+              phosphorus: data.phosphorus,
+              potassium: data.potassium,
+              pH: data.pH,
+            }))
+          : [];
+        setLands(docs);
+        setActiveLandId((currentActiveLandId) => {
+          if (currentActiveLandId === null && docs.length > 0) {
+            return docs[0].id;
+          }
+          if (currentActiveLandId && !docs.some((l) => l.id === currentActiveLandId)) {
+            return docs.length > 0 ? docs[0].id : null;
+          }
+          return currentActiveLandId;
+        });
+      } catch (e: any) {
+        console.warn("RTDB lands fetch error:", e?.code ?? e?.name, e?.message);
+      }
+    };
+
+    void fetchLands();
+    const pollId = window.setInterval(fetchLands, 10000);
+
+    return () => window.clearInterval(pollId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rtdb, uid]);
 
   useEffect(() => {
     if (!activeLandId) return;
@@ -55,7 +100,7 @@ export default function Dashboard() {
 
   if (loading) return null;
 
-  const handleSaveSoil = (result: SoilTextureWizardResult) => {
+  const handleSaveSoil = async (result: SoilTextureWizardResult) => {
     const id = crypto.randomUUID();
     const displayName = tempName.trim() || `Land ${lands.length + 1}`;
     const newLand = { id, name: displayName, soilType: result.texture };
@@ -63,6 +108,13 @@ export default function Dashboard() {
     setActiveLandId(id);
     setTempName("");
     setCreateOpen(false);
+    try {
+      if (rtdb && uid) {
+        await set(ref(rtdb, `users/${uid}/lands/${id}`), newLand);
+      }
+    } catch (e: any) {
+      console.warn("Failed to create land:", e?.code ?? e?.name, e?.message);
+    }
   };
 
   const openEditForActive = () => {
@@ -79,7 +131,7 @@ export default function Dashboard() {
     setEditNewSoilType(result.texture);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editLandId) return;
     setLands((prev) =>
       prev.map((l) =>
@@ -92,6 +144,15 @@ export default function Dashboard() {
     setEditOpen(false);
     setEditLandId(null);
     setEditNewSoilType(undefined);
+    try {
+      if (rtdb && uid) {
+        const updates: Partial<Land> = { name: editName.trim() || (lands.find((l) => l.id === editLandId)?.name ?? "") };
+        if (editNewSoilType) updates.soilType = editNewSoilType;
+        await update(ref(rtdb, `users/${uid}/lands/${editLandId}`), updates as any);
+      }
+    } catch (e: any) {
+      console.warn("Failed to update land:", e?.code ?? e?.name, e?.message);
+    }
   };
 
   const openDeleteForActive = () => {
@@ -103,7 +164,7 @@ export default function Dashboard() {
     setLandStep("nutrients");
   };
 
-  const saveNutrientInputs = () => {
+  const saveNutrientInputs = async () => {
     if (!activeLandId) return;
     const nitrogen = tempNitrogen.trim() === "" ? undefined : Number(tempNitrogen);
     const phosphorus = tempPhosphorus.trim() === "" ? undefined : Number(tempPhosphorus);
@@ -123,14 +184,35 @@ export default function Dashboard() {
       )
     );
     setLandStep("overview");
+    try {
+      if (rtdb && uid) {
+        const updates: Partial<Land> = {};
+        if (!Number.isNaN(nitrogen as number) && nitrogen !== undefined) updates.nitrogen = nitrogen as number;
+        if (!Number.isNaN(phosphorus as number) && phosphorus !== undefined) updates.phosphorus = phosphorus as number;
+        if (!Number.isNaN(potassium as number) && potassium !== undefined) updates.potassium = potassium as number;
+        if (!Number.isNaN(pH as number) && pH !== undefined) updates.pH = pH as number;
+        if (Object.keys(updates).length > 0) {
+          await update(ref(rtdb, `users/${uid}/lands/${activeLandId}`), updates as any);
+        }
+      }
+    } catch (e: any) {
+      console.warn("Failed to save nutrients:", e?.code ?? e?.name, e?.message);
+    }
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!activeLandId) return;
     const remaining = lands.filter((l) => l.id !== activeLandId);
     setLands(remaining);
     setActiveLandId(remaining.length ? remaining[0].id : null);
     setDeleteOpen(false);
+    try {
+      if (rtdb && uid) {
+        await remove(ref(rtdb, `users/${uid}/lands/${activeLandId}`));
+      }
+    } catch (e: any) {
+      console.warn("Failed to delete land:", e?.code ?? e?.name, e?.message);
+    }
   };
 
   return (
