@@ -171,6 +171,13 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
     setAnswers((prev) => ({ ...prev, feel: undefined }));
   };
 
+  const optionClasses = (selected: boolean) =>
+    `rounded-lg border p-4 text-left transition ${
+      selected
+        ? "border-green-600 bg-green-50 dark:bg-green-900/20"
+        : "border-black/10 dark:border-white/10 bg-transparent hover:border-green-600 hover:bg-green-50/40 dark:hover:bg-green-900/10"
+    }`;
+
   return (
     <div className="p-2 sm:p-0 text-gray-900 dark:text-gray-100">
       <div className="flex items-center justify-between">
@@ -187,7 +194,7 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
 
       {currentStep === "formsBall" && (
         <div className="mt-8">
-          <p className="text-gray-700">
+          <p className="text-gray-900 dark:text-gray-100">
             Moisten a small handful of soil. Knead it to break clods. Does it
             remain in a ball when squeezed firmly in your palm?
           </p>
@@ -195,17 +202,19 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, formsBall: "yes" }))}
-              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+              aria-pressed={answers.formsBall === "yes"}
+              className={optionClasses(answers.formsBall === "yes")}
             >
               <div className="font-medium">Yes — remains in a ball</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">Cohesive with some fines</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Cohesive with some fines</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, formsBall: "no" }))}
-              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+              aria-pressed={answers.formsBall === "no"}
+              className={optionClasses(answers.formsBall === "no")}
             >
               <div className="font-medium">No — will not hold a ball</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">Loose, single-grain</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Loose, single-grain</div>
             </button>
           </div>
         </div>
@@ -213,7 +222,7 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
 
       {currentStep === "ribbonLength" && (
         <div className="mt-8">
-          <p className="text-gray-700">
+          <p className="text-gray-900 dark:text-gray-100">
             Roll the moistened soil into a ball. Press it between your thumb and
             forefinger to form a ribbon. What is the longest ribbon you can form
             before it breaks?
@@ -222,31 +231,35 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: "none" }))}
-              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+              aria-pressed={answers.ribbonLength === "none"}
+              className={optionClasses(answers.ribbonLength === "none")}
             >
               <div className="font-medium">No ribbon</div>
-              <div className="text-sm text-gray-600 mt-1">Breaks immediately</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Breaks immediately</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: "<1" }))}
-              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+              aria-pressed={answers.ribbonLength === "<1"}
+              className={optionClasses(answers.ribbonLength === "<1")}
             >
               <div className="font-medium">Short ribbon</div>
-              <div className="text-sm text-gray-600 mt-1">Less than 1 inch (2.5 cm)</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Less than 1 inch (2.5 cm)</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: "1-2" }))}
-              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+              aria-pressed={answers.ribbonLength === "1-2"}
+              className={optionClasses(answers.ribbonLength === "1-2")}
             >
               <div className="font-medium">Moderate ribbon</div>
-              <div className="text-sm text-gray-600 mt-1">1–2 inches (2.5–5 cm)</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">1–2 inches (2.5–5 cm)</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: ">2" }))}
-              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+              aria-pressed={answers.ribbonLength === ">2"}
+              className={optionClasses(answers.ribbonLength === ">2")}
             >
               <div className="font-medium">Long ribbon</div>
-              <div className="text-sm text-gray-600 mt-1">More than 2 inches (5 cm)</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">More than 2 inches (5 cm)</div>
             </button>
           </div>
 
@@ -263,38 +276,41 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
 
       {currentStep === "feel" && (
         <div className="mt-8">
-          <p className="text-gray-700">
+          <p className="text-gray-900 dark:text-gray-100">
             Rub the moistened soil between your fingers. How does it feel?
           </p>
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, feel: "gritty" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              aria-pressed={answers.feel === "gritty"}
+              className={optionClasses(answers.feel === "gritty")}
             >
               <div className="font-medium">Very gritty</div>
-              <div className="text-sm text-gray-600 mt-1">Sandiness is dominant</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Sandiness is dominant</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, feel: "balanced" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              aria-pressed={answers.feel === "balanced"}
+              className={optionClasses(answers.feel === "balanced")}
             >
               <div className="font-medium">Balanced</div>
-              <div className="text-sm text-gray-600 mt-1">Gritty and smooth about equal</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Gritty and smooth about equal</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, feel: "smooth" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              aria-pressed={answers.feel === "smooth"}
+              className={optionClasses(answers.feel === "smooth")}
             >
               <div className="font-medium">Very smooth</div>
-              <div className="text-sm text-gray-600 mt-1">Flour-like, silky</div>
+              <div className="text-sm text-gray-700 dark:text-gray-200 mt-1">Flour-like, silky</div>
             </button>
           </div>
 
           <div className="mt-6 flex gap-3">
-            <button onClick={goBack} className="px-4 py-2 rounded-lg border">
+            <button onClick={goBack} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800">
               Back
             </button>
-            <button onClick={reset} className="px-4 py-2 rounded-lg border">
+            <button onClick={reset} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800">
               Start over
             </button>
           </div>
