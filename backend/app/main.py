@@ -3,8 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from .schemas import (
     SoilInput, ScoredCrop, RecommendReq, CropOut, RecommendRes,
     WeatherRequest, WeatherResponse, WeatherRecommendRequest
+), RotationReq, RotationYearOptions, RotationScoreReq, RotationScoreRes, RecommendAutoReq
+from .scoring import score_crops, score_specific_crops
+from .rotation import (
+    compute_rotation_options_from_categories,
+    five_label_to_lmh,
+    ph_cat_to_band,
+    representative_value_from_five_label,
+    ph_cat_to_value,
 )
-from .scoring import score_crops
 from .weather import get_weather_data_for_city_free
 from .weather_scoring import WeatherScorer
 import sys

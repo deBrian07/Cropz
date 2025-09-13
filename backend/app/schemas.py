@@ -65,26 +65,3 @@ class RecommendRes(BaseModel):
     recommendations: list[CropOut]
 
 
-# Weather-related schemas
-class WeatherRequest(BaseModel):
-    city: str = Field(..., description="City name for weather data")
-    year: int = Field(2024, description="Year for historical weather data")
-
-
-class WeatherResponse(BaseModel):
-    temperature: float = Field(..., description="Average temperature in Celsius")
-    humidity: float = Field(..., description="Average humidity percentage")
-    rainfall: float = Field(..., description="Total rainfall in mm")
-    location: str = Field(..., description="City name")
-    period: str = Field(..., description="Date range")
-
-
-class WeatherRecommendRequest(BaseModel):
-    city: str = Field(..., description="City name for weather data")
-    N: float = Field(..., description="Nitrogen content in soil")
-    P: float = Field(..., description="Phosphorus content in soil") 
-    K: float = Field(..., description="Potassium content in soil")
-    ph: float = Field(..., ge=0, le=14, description="Soil pH")
-    year: int = Field(2024, description="Year for historical weather data")
-
-

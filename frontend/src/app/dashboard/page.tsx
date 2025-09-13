@@ -10,10 +10,10 @@ type Land = {
   id: string;
   name: string;
   soilType?: string;
-  nitrogen?: number;
-  phosphorus?: number;
-  potassium?: number;
-  pH?: number;
+  nitrogen?: string;
+  phosphorus?: string;
+  potassium?: string;
+  pH?: string;
 };
 
 export default function Dashboard() {
@@ -88,15 +88,17 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rtdb, uid]);
 
+  // Reset step and sync temp fields only when the active land changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!activeLandId) return;
     setLandStep("overview");
     const land = lands.find((l) => l.id === activeLandId);
-    setTempNitrogen(land?.nitrogen !== undefined ? String(land.nitrogen) : "");
-    setTempPhosphorus(land?.phosphorus !== undefined ? String(land.phosphorus) : "");
-    setTempPotassium(land?.potassium !== undefined ? String(land.potassium) : "");
-    setTempPH(land?.pH !== undefined ? String(land.pH) : "");
-  }, [activeLandId, lands]);
+    setTempNitrogen(land?.nitrogen ?? "");
+    setTempPhosphorus(land?.phosphorus ?? "");
+    setTempPotassium(land?.potassium ?? "");
+    setTempPH(land?.pH ?? "");
+  }, [activeLandId]);
 
   if (loading) return null;
 
@@ -166,19 +168,19 @@ export default function Dashboard() {
 
   const saveNutrientInputs = async () => {
     if (!activeLandId) return;
-    const nitrogen = tempNitrogen.trim() === "" ? undefined : Number(tempNitrogen);
-    const phosphorus = tempPhosphorus.trim() === "" ? undefined : Number(tempPhosphorus);
-    const potassium = tempPotassium.trim() === "" ? undefined : Number(tempPotassium);
-    const pH = tempPH.trim() === "" ? undefined : Number(tempPH);
+    const nitrogen = tempNitrogen.trim() === "" ? undefined : tempNitrogen.trim();
+    const phosphorus = tempPhosphorus.trim() === "" ? undefined : tempPhosphorus.trim();
+    const potassium = tempPotassium.trim() === "" ? undefined : tempPotassium.trim();
+    const pH = tempPH.trim() === "" ? undefined : tempPH.trim();
     setLands((prev) =>
       prev.map((l) =>
         l.id === activeLandId
           ? {
               ...l,
-              nitrogen: Number.isNaN(nitrogen as number) ? l.nitrogen : (nitrogen as number | undefined),
-              phosphorus: Number.isNaN(phosphorus as number) ? l.phosphorus : (phosphorus as number | undefined),
-              potassium: Number.isNaN(potassium as number) ? l.potassium : (potassium as number | undefined),
-              pH: Number.isNaN(pH as number) ? l.pH : (pH as number | undefined),
+              nitrogen: nitrogen,
+              phosphorus: phosphorus,
+              potassium: potassium,
+              pH: pH,
             }
           : l
       )
@@ -187,10 +189,10 @@ export default function Dashboard() {
     try {
       if (rtdb && uid) {
         const updates: Partial<Land> = {};
-        if (!Number.isNaN(nitrogen as number) && nitrogen !== undefined) updates.nitrogen = nitrogen as number;
-        if (!Number.isNaN(phosphorus as number) && phosphorus !== undefined) updates.phosphorus = phosphorus as number;
-        if (!Number.isNaN(potassium as number) && potassium !== undefined) updates.potassium = potassium as number;
-        if (!Number.isNaN(pH as number) && pH !== undefined) updates.pH = pH as number;
+        if (nitrogen !== undefined) updates.nitrogen = nitrogen as string;
+        if (phosphorus !== undefined) updates.phosphorus = phosphorus as string;
+        if (potassium !== undefined) updates.potassium = potassium as string;
+        if (pH !== undefined) updates.pH = pH as string;
         if (Object.keys(updates).length > 0) {
           await update(ref(rtdb, `users/${uid}/lands/${activeLandId}`), updates as any);
         }
@@ -287,46 +289,61 @@ export default function Dashboard() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nitrogen</label>
-                              <input
-                                type="number"
+                              <select
                                 value={tempNitrogen}
                                 onChange={(e) => setTempNitrogen(e.target.value)}
-                                placeholder="e.g., 50"
-                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                              />
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10"
+                              >
+                                <option value="">Select…</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                              </select>
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phosphorus</label>
-                              <input
-                                type="number"
+                              <select
                                 value={tempPhosphorus}
                                 onChange={(e) => setTempPhosphorus(e.target.value)}
-                                placeholder="e.g., 30"
-                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                              />
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10"
+                              >
+                                <option value="">Select…</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                              </select>
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Potassium</label>
-                              <input
-                                type="number"
+                              <select
                                 value={tempPotassium}
                                 onChange={(e) => setTempPotassium(e.target.value)}
-                                placeholder="e.g., 40"
-                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                              />
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10"
+                              >
+                                <option value="">Select…</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                              </select>
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">pH</label>
-                              <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="14"
+                              <select
                                 value={tempPH}
                                 onChange={(e) => setTempPH(e.target.value)}
-                                placeholder="e.g., 6.5"
-                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                              />
+                                className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10"
+                              >
+                                <option value="">Select…</option>
+                                <option value="Acidic (5.0–5.9)">Acidic (5.0–5.9)</option>
+                                <option value="Neutral (6.0–7.3)">Neutral (6.0–7.3)</option>
+                                <option value="Alkaline (7.4–8.5)">Alkaline (7.4–8.5)</option>
+                              </select>
                             </div>
                           </div>
                           <div className="mt-4 flex justify-end gap-3">
