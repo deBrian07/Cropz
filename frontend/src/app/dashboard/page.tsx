@@ -40,6 +40,10 @@ export default function Dashboard() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [recommending, setRecommending] = useState(false);
+  const [locationMode, setLocationMode] = useState<"auto" | "manual">("auto");
+  const [manualLatitude, setManualLatitude] = useState("");
+  const [manualLongitude, setManualLongitude] = useState("");
+  const [locationError, setLocationError] = useState("");
 
   useEffect(() => {
     if (!auth) {
@@ -283,22 +287,61 @@ export default function Dashboard() {
     }
 
     setRecommending(true);
+    setLocationError("");
+    
     try {
-      // Get geolocation (fallback to last known if available)
       let latitude: number | undefined = undefined;
       let longitude: number | undefined = undefined;
-      try {
-        const loc = await getCurrentLocation();
-        latitude = loc.latitude;
-        longitude = loc.longitude;
-      } catch {
+
+      if (locationMode === "manual") {
+        // Use manual coordinates
+        const lat = parseFloat(manualLatitude);
+        const lng = parseFloat(manualLongitude);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          setLocationError("Please enter valid latitude and longitude values");
+          setRecommending(false);
+          return;
+        }
+        
+        if (lat < -90 || lat > 90) {
+          setLocationError("Latitude must be between -90 and 90");
+          setRecommending(false);
+          return;
+        }
+        
+        if (lng < -180 || lng > 180) {
+          setLocationError("Longitude must be between -180 and 180");
+          setRecommending(false);
+          return;
+        }
+        
+        latitude = lat;
+        longitude = lng;
+      } else {
+        // Get geolocation automatically
         try {
-          const last = (window as any).lastKnownLocation;
-          if (last) {
-            latitude = last.latitude;
-            longitude = last.longitude;
+          const loc = await getCurrentLocation();
+          latitude = loc.latitude;
+          longitude = loc.longitude;
+        } catch (error) {
+          // Fallback to last known location
+          try {
+            const last = (window as any).lastKnownLocation;
+            if (last) {
+              latitude = last.latitude;
+              longitude = last.longitude;
+            } else {
+              setLocationError("Unable to get your location. Please switch to manual mode and enter coordinates.");
+              setRecommending(false);
+              return;
+            }
+          } catch {
+            setLocationError("Unable to get your location. Please switch to manual mode and enter coordinates.");
+            setRecommending(false);
+            return;
           }
-        } catch {}
+        }
       }
 
       const soil: any = {
@@ -619,23 +662,119 @@ export default function Dashboard() {
                           </div>
                         )}
 
-                        {/* Action Buttons */}
+                        {/* Location Input Section */}
                         {landStep === "overview" && (
-                          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                            <button
-                              onClick={openNutrientInputs}
-                              className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
-                            >
-                              📊 Edit Soil Health Variables
-                            </button>
-                            
-                            <button 
-                              onClick={handleRecommend}
-                              disabled={recommending}
-                              className={`px-8 py-4 rounded-lg text-white font-semibold ${recommending ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
-                            >
-                              {recommending ? "Calculating..." : "🌱 Recommend Best Crops"}
-                            </button>
+                          <div className="mt-8 space-y-6">
+                            {/* Location Mode Selection */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                                📍 Location Settings
+                              </h3>
+                              
+                              {/* Mode Toggle */}
+                              <div className="flex gap-4 mb-6">
+                                <button
+                                  onClick={() => setLocationMode("auto")}
+                                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                                    locationMode === "auto"
+                                      ? "bg-emerald-600 text-white shadow-lg"
+                                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  }`}
+                                >
+                                  🌍 Use Current Location
+                                </button>
+                                <button
+                                  onClick={() => setLocationMode("manual")}
+                                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                                    locationMode === "manual"
+                                      ? "bg-emerald-600 text-white shadow-lg"
+                                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  }`}
+                                >
+                                  📝 Enter Coordinates
+                                </button>
+                              </div>
+
+                              {/* Manual Input Fields */}
+                              {locationMode === "manual" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                      Latitude
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={manualLatitude}
+                                      onChange={(e) => setManualLatitude(e.target.value)}
+                                      placeholder="e.g., 40.7128"
+                                      className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                    />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: -90 to 90</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                      Longitude
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={manualLongitude}
+                                      onChange={(e) => setManualLongitude(e.target.value)}
+                                      placeholder="e.g., -74.0060"
+                                      className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                                    />
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Range: -180 to 180</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Auto Location Info */}
+                              {locationMode === "auto" && (
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+                                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                                    <span className="text-lg">🌍</span>
+                                    <span className="font-medium">Automatic Location Detection</span>
+                                  </div>
+                                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+                                    We'll use your current location for weather and soil data. Make sure location access is enabled in your browser.
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Error Message */}
+                              {locationError && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                                  <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                                    <span className="text-lg">⚠️</span>
+                                    <span className="font-medium">Location Error</span>
+                                  </div>
+                                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{locationError}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                              <button
+                                onClick={openNutrientInputs}
+                                className="px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                              >
+                                📊 Edit Soil Health Variables
+                              </button>
+                              
+                              <button 
+                                onClick={handleRecommend}
+                                disabled={recommending}
+                                className={`px-8 py-4 rounded-lg text-white font-semibold transition-all duration-300 ${
+                                  recommending 
+                                    ? "bg-emerald-400 cursor-not-allowed" 
+                                    : "bg-emerald-600 hover:bg-emerald-700 hover:scale-105"
+                                }`}
+                              >
+                                {recommending ? "Calculating..." : "🌱 Recommend Best Crops"}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
