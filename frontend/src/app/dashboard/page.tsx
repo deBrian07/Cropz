@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import SoilTextureWizard from "@/components/SoilTextureWizard";
 
 export default function Dashboard() {
   const [name, setName] = useState<string | null>(null);
@@ -24,11 +25,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen px-6 py-16 max-w-3xl mx-auto">
       <h1 className="text-3xl font-semibold">{`Welcome${name ? ", " + name.split(" ")[0] : "!"}`}</h1>
-      <p className="text-gray-600 mt-2">
-        This is the main page. We’ll build the guided soil flowchart and planner next.
-      </p>
-      <div className="mt-8 rounded-2xl border border-dashed p-8 text-gray-500">
-        Placeholder — content removed for now.
+      <p className="text-gray-600 mt-2">Create a new land by identifying soil texture with a quick, guided flow.</p>
+      <div className="mt-8">
+        <SoilTextureWizard />
       </div>
     </div>
   );
