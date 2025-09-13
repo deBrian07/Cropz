@@ -38,7 +38,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen px-6 py-16 max-w-5xl mx-auto">
+    <div className="min-h-screen px-6 py-16 max-w-5xl mx-auto text-gray-900 dark:text-gray-100">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold">{`Welcome${name ? ", " + name.split(" ")[0] : "!"}`}</h1>
         <button
@@ -51,7 +51,7 @@ export default function Dashboard() {
 
       <div className="mt-6">
         {lands.length === 0 ? (
-          <div className="rounded-2xl border border-dashed p-10 text-center text-gray-600">
+          <div className="rounded-2xl border border-dashed p-10 text-center text-gray-600 dark:text-gray-300">
             No lands yet. Create your first land to get soil-based crop suggestions.
           </div>
         ) : (
@@ -61,10 +61,10 @@ export default function Dashboard() {
                 <button
                   key={land.id}
                   onClick={() => setActiveLandId(land.id)}
-                  className={`px-4 py-2 rounded-full border ${
+                  className={`px-4 py-2 rounded-full border transition ${
                     land.id === activeLandId
-                      ? "bg-green-600 text-white border-green-600"
-                      : "bg-white hover:bg-gray-50"
+                      ? "bg-green-600 text-white border-green-600 shadow-sm"
+                      : "bg-white text-gray-800 border-black/10 hover:bg-gray-50 dark:bg-neutral-900 dark:text-gray-100 dark:border-white/10 dark:hover:bg-neutral-800"
                   }`}
                 >
                   {land.name}
@@ -72,7 +72,7 @@ export default function Dashboard() {
               ))}
             </div>
 
-            <div className="mt-6 rounded-2xl border p-6">
+            <div className="mt-6 rounded-2xl border p-6 border-black/10 dark:border-white/10 bg-white dark:bg-neutral-900">
               {activeLandId ? (
                 (() => {
                   const active = lands.find((l) => l.id === activeLandId)!;
@@ -81,12 +81,12 @@ export default function Dashboard() {
                       <div className="text-sm text-gray-500">Selected land</div>
                       <div className="text-2xl font-semibold">{active.name}</div>
                       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="rounded-xl border p-4">
-                          <div className="text-sm text-gray-600">Soil texture</div>
+                        <div className="rounded-xl border p-4 border-black/10 dark:border-white/10">
+                          <div className="text-sm text-gray-600 dark:text-gray-300">Soil texture</div>
                           <div className="text-lg font-medium">{active.soilType ?? "Unknown"}</div>
                         </div>
-                        <div className="rounded-xl border p-4">
-                          <div className="text-sm text-gray-600">Next</div>
+                        <div className="rounded-xl border p-4 border-black/10 dark:border-white/10">
+                          <div className="text-sm text-gray-600 dark:text-gray-300">Next</div>
                           <div className="text-lg font-medium">Crop suggestions coming soon</div>
                         </div>
                       </div>
@@ -94,7 +94,7 @@ export default function Dashboard() {
                   );
                 })()
               ) : (
-                <div className="text-gray-600">Select a land to view details.</div>
+                <div className="text-gray-600 dark:text-gray-300">Select a land to view details.</div>
               )}
             </div>
           </div>
@@ -104,16 +104,15 @@ export default function Dashboard() {
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create new land" widthClassName="max-w-3xl">
         <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Land name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Land name</label>
             <input
               value={tempName}
               onChange={(e) => setTempName(e.target.value)}
               placeholder="e.g., North field"
-              className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600"
+              className="mt-1 w-full rounded-xl border px-3 py-2 outline-none focus:ring-2 focus:ring-green-600 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 border-black/10 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
-          <div className="rounded-xl border p-4 bg-gray-50">
-            <div className="text-sm text-gray-700 mb-2">Soil texture assessment</div>
+          <div>
             <SoilTextureWizard onComplete={handleSaveSoil} />
           </div>
         </div>

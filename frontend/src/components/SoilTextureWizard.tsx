@@ -172,13 +172,13 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
   };
 
   return (
-    <div className="rounded-2xl border p-6 sm:p-8 bg-white/60 backdrop-blur">
+    <div className="p-2 sm:p-0 text-gray-900 dark:text-gray-100">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">New land · Soil texture by feel</h2>
+        <h2 className="text-2xl font-semibold">Soil texture by feel</h2>
         <div className="text-sm text-gray-500">{`Step ${stepIndex} of 4`}</div>
       </div>
 
-      <div className="mt-6 h-2 w-full rounded-full bg-gray-100">
+      <div className="mt-4 h-2 w-full rounded-full bg-gray-200 dark:bg-neutral-800">
         <div
           className="h-2 rounded-full bg-green-600 transition-all"
           style={{ width: `${(stepIndex / 4) * 100}%` }}
@@ -195,17 +195,17 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, formsBall: "yes" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
             >
               <div className="font-medium">Yes — remains in a ball</div>
-              <div className="text-sm text-gray-600 mt-1">Cohesive with some fines</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">Cohesive with some fines</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, formsBall: "no" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
             >
               <div className="font-medium">No — will not hold a ball</div>
-              <div className="text-sm text-gray-600 mt-1">Loose, single-grain</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">Loose, single-grain</div>
             </button>
           </div>
         </div>
@@ -222,28 +222,28 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: "none" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
             >
               <div className="font-medium">No ribbon</div>
               <div className="text-sm text-gray-600 mt-1">Breaks immediately</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: "<1" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
             >
               <div className="font-medium">Short ribbon</div>
               <div className="text-sm text-gray-600 mt-1">Less than 1 inch (2.5 cm)</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: "1-2" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
             >
               <div className="font-medium">Moderate ribbon</div>
               <div className="text-sm text-gray-600 mt-1">1–2 inches (2.5–5 cm)</div>
             </button>
             <button
               onClick={() => setAnswers((prev) => ({ ...prev, ribbonLength: ">2" }))}
-              className="rounded-xl border p-4 text-left hover:border-green-600 hover:bg-green-50"
+              className="rounded-lg border p-4 text-left border-black/10 dark:border-white/10 bg-white/90 dark:bg-neutral-900/90 hover:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition"
             >
               <div className="font-medium">Long ribbon</div>
               <div className="text-sm text-gray-600 mt-1">More than 2 inches (5 cm)</div>
@@ -251,10 +251,10 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
           </div>
 
           <div className="mt-6 flex gap-3">
-            <button onClick={goBack} className="px-4 py-2 rounded-lg border">
+            <button onClick={goBack} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800">
               Back
             </button>
-            <button onClick={reset} className="px-4 py-2 rounded-lg border">
+            <button onClick={reset} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800">
               Start over
             </button>
           </div>
@@ -303,32 +303,32 @@ export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps
 
       {currentStep === "result" && prediction && (
         <div className="mt-8">
-          <div className="rounded-xl border p-5 bg-green-50 border-green-200">
-            <div className="text-sm text-green-700">Predicted soil texture</div>
-            <div className="mt-1 text-2xl font-semibold text-green-900">
+          <div className="rounded-lg border p-5 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700">
+            <div className="text-sm text-green-700 dark:text-green-300">Predicted soil texture</div>
+            <div className="mt-1 text-2xl font-semibold text-green-900 dark:text-green-200">
               {prediction.texture}
             </div>
-            <div className="mt-2 text-gray-700">{prediction.explanation}</div>
+            <div className="mt-2 text-gray-700 dark:text-gray-200">{prediction.explanation}</div>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button onClick={goBack} className="px-4 py-2 rounded-lg border">
+            <button onClick={goBack} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800">
               Change previous answer
             </button>
-            <button onClick={reset} className="px-4 py-2 rounded-lg border">
+            <button onClick={reset} className="px-4 py-2 rounded-md border border-black/10 dark:border-white/10 bg-transparent hover:bg-gray-50 dark:hover:bg-neutral-800">
               Start a new assessment
             </button>
             {onComplete && (
               <button
                 onClick={() => onComplete({ texture: prediction.texture, explanation: prediction.explanation, answers })}
-                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
               >
                 Save soil type
               </button>
             )}
           </div>
 
-          <p className="mt-6 text-xs text-gray-500">
+          <p className="mt-6 text-xs text-gray-500 dark:text-gray-400">
             Based on the USDA NRCS Texture-by-Feel method. See guidance: texture-by-feel
             flowchart (USDA NRCS).
           </p>

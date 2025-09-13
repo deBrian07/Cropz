@@ -34,7 +34,7 @@ export default function Modal({ open, onClose, title, children, widthClassName }
         className={`relative z-10 w-full ${widthClassName ?? "max-w-2xl"}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="rounded-2xl border bg-white shadow-xl dark:border-white/10 dark:bg-neutral-900">
+        <div className="rounded-2xl border bg-white shadow-xl dark:border-white/10 dark:bg-neutral-900 text-gray-900 dark:text-gray-100">
           <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 dark:border-white/10">
             <div className="text-lg font-semibold">
               {title}
