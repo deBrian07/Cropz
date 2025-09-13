@@ -116,3 +116,52 @@ def get_crop_recommendations_with_reasons(payload: dict, k: int = 5):
     
     return recommendations
 
+
+def probs_for_crops(payload: dict, crops: list[str], normalize: bool = True):
+    """
+    Get probabilities for a specific list of crops.
+
+    Args:
+        payload: feature dict expected by the model
+        crops: list of crop labels to score
+        normalize: if True, convert to percents normalized over the provided crops
+
+    Returns: list of dicts { crop, prob, percent }
+    """
+    # Convert payload to feature array
+    x = np.array([[payload[f] for f in FEATS]], dtype=float)
+    p = MODEL.predict_proba(x)[0]
+
+    results = []
+    for crop in crops:
+        try:
+            idx = LE.transform([crop])[0]
+            prob = float(p[idx])
+            results.append({"crop": crop, "prob": prob})
+        except Exception:
+            # Unknown crop label in the model
+            continue
+
+    # Normalize across provided crops for UI comparability
+    if normalize:
+        s = sum(o["prob"] for o in results) or 1.0
+        for o in results:
+            o["percent"] = round(100 * o["prob"] / s, 1)
+    else:
+        for o in results:
+            o["percent"] = round(100 * o["prob"], 1)
+
+    # Highest first
+    results.sort(key=lambda o: o["percent"], reverse=True)
+    return results
+
+
+def get_probs_for_crops_with_reasons(payload: dict, crops: list[str]):
+    """
+    Like probs_for_crops but also attaches heuristic reasons for readability.
+    """
+    results = probs_for_crops(payload, crops, normalize=True)
+    for r in results:
+        r["reasons"] = reasons_for(r["crop"], payload)
+    return results
+
