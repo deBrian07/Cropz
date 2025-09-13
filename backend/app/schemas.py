@@ -40,3 +40,25 @@ class ScoredCrop(BaseModel):
     rotation_group: Literal["legumes", "root_veggies", "greens_brassicas", "fruiting"]
 
 
+# ML Recommendation schemas
+class RecommendReq(BaseModel):
+    N: float = Field(..., description="Nitrogen content in soil")
+    P: float = Field(..., description="Phosphorus content in soil") 
+    K: float = Field(..., description="Potassium content in soil")
+    ph: float = Field(..., ge=0, le=14, description="Soil pH")
+    temperature: float = Field(..., description="Temperature in Celsius")
+    humidity: float = Field(..., ge=0, le=100, description="Humidity percentage")
+    rainfall: float = Field(..., ge=0, description="Rainfall in mm")
+
+
+class CropOut(BaseModel):
+    name: str
+    ml_prob: float = Field(..., description="Raw ML probability")
+    percent: float = Field(..., description="Normalized percentage")
+    reasons: list[str] = Field(default_factory=list, description="Explanation reasons")
+
+
+class RecommendRes(BaseModel):
+    recommendations: list[CropOut]
+
+

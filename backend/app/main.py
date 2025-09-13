@@ -1,7 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .schemas import SoilInput, ScoredCrop
+from .schemas import SoilInput, ScoredCrop, RecommendReq, CropOut, RecommendRes
 from .scoring import score_crops
+import sys
+from pathlib import Path
+
+# Add the project root to Python path for ML imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.append(str(project_root))
+
+try:
+    from ml.inference import get_crop_recommendations_with_reasons
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    print("Warning: ML model not available. Install required packages and train model.")
 
 app = FastAPI(title="Cropz Backend", version="0.1.0")
 
@@ -26,5 +39,43 @@ async def score_endpoint(payload: SoilInput) -> list[ScoredCrop]:
     Returns a list of crops with mock percentage matches based on simple heuristics.
     """
     return score_crops(payload)
+
+
+@app.post("/recommend", response_model=RecommendRes)
+async def recommend(req: RecommendReq):
+    """ML-powered crop recommendation endpoint."""
+    if not ML_AVAILABLE:
+        return {"recommendations": []}
+    
+    try:
+        # Convert request to payload format
+        payload = {
+            "N": req.N,
+            "P": req.P, 
+            "K": req.K,
+            "temperature": req.temperature,
+            "humidity": req.humidity,
+            "ph": req.ph,
+            "rainfall": req.rainfall
+        }
+        
+        # Get ML recommendations
+        recommendations = get_crop_recommendations_with_reasons(payload, k=5)
+        
+        # Convert to response format
+        cards = []
+        for rec in recommendations:
+            cards.append(CropOut(
+                name=rec["crop"],
+                ml_prob=rec["prob"],
+                percent=rec["percent"],
+                reasons=rec.get("reasons", [])
+            ))
+        
+        return {"recommendations": cards}
+        
+    except Exception as e:
+        print(f"Error in ML recommendation: {e}")
+        return {"recommendations": []}
 
 
