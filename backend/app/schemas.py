@@ -64,10 +64,11 @@ class RecommendRes(BaseModel):
 
 # Rotation schemas
 class RotationReq(BaseModel):
-    ph: float = Field(..., ge=0, le=14)
-    N: float = Field(..., description="Nitrogen content in soil")
-    P: float = Field(..., description="Phosphorus content in soil")
-    K: float = Field(..., description="Potassium content in soil")
+    # Category-based request matching CSV bands
+    N: Literal["N0", "N1", "N2", "N3", "N4"]
+    P: Literal["P0", "P1", "P2", "P3", "P4"]
+    K: Literal["K0", "K1", "K2", "K3", "K4"]
+    pH_cat: Literal["pH0", "pH1", "pH2"]
 
 
 class RotationYearOptions(BaseModel):
@@ -75,4 +76,31 @@ class RotationYearOptions(BaseModel):
     Year2_options: list[str]
     Year3_options: list[str]
     Year4_options: list[str]
+
+
+class RotationScoreReq(BaseModel):
+    # Soil for scoring context
+    soil: SoilInput
+    # Preselected rotation options, if client has them; otherwise backend can compute
+    rotation: RotationYearOptions | None = None
+
+
+class RotationScoreRes(BaseModel):
+    year1: list[ScoredCrop]
+    year2: list[ScoredCrop]
+    year3: list[ScoredCrop]
+    year4: list[ScoredCrop]
+
+
+# Auto-recommend (no weather required) schema
+class RecommendAutoReq(BaseModel):
+    # Frontend sends 5-bin labels and 3 pH categories
+    N: Literal["N0", "N1", "N2", "N3", "N4"]
+    P: Literal["P0", "P1", "P2", "P3", "P4"]
+    K: Literal["K0", "K1", "K2", "K3", "K4"]
+    pH_cat: Literal["pH0", "pH1", "pH2"]
+    # Optional metadata from frontend
+    latitude: float | None = None
+    longitude: float | None = None
+    soil_type: SoilType | None = None
 

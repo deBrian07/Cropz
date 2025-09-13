@@ -148,3 +148,95 @@ def compute_rotation_options(
     }
 
 
+def compute_rotation_options_from_categories(
+    N_band: str,
+    P_band: str,
+    K_band: str,
+    ph_band: str,
+) -> Dict[str, List[str]]:
+    """Directly lookup rotation options using categorical bands matching the CSV."""
+    df = _read_rotation_table()
+    row = df[(df["N"] == N_band) & (df["P"] == P_band) & (df["K"] == K_band) & (df["pH_band"] == ph_band)]
+    if row.empty:
+        return {f"Year{i}_options": [] for i in range(1, 5)}
+
+    r = row.iloc[0]
+
+    def split_options(val: str) -> List[str]:
+        if not isinstance(val, str):
+            return []
+        return [x.strip() for x in val.split("|")]
+
+    return {
+        "Year1_options": split_options(r["Year1_options"]),
+        "Year2_options": split_options(r["Year2_options"]),
+        "Year3_options": split_options(r["Year3_options"]),
+        "Year4_options": split_options(r["Year4_options"]),
+    }
+
+
+def category_to_level(cat: str) -> int:
+    """Map Low/Medium/High to 0-5 relative scale used by SoilInput."""
+    c = (cat or "").strip().lower()
+    if c == "low":
+        return 1
+    if c == "medium":
+        return 3
+    if c == "high":
+        return 5
+    return 3
+
+
+def ph_band_to_value(ph_band: str) -> float:
+    """Return a representative numeric pH for a band label from the CSV."""
+    s = (ph_band or "").strip().lower()
+    if s.startswith("acidic"):
+        return 5.5
+    if s.startswith("neutral"):
+        return 6.7
+    if s.startswith("alkaline"):
+        return 7.8
+    return 6.7
+
+# --- New helpers for 5-bin labels and pH 3-cat labels ---
+
+def _label_to_index(label: str) -> int:
+    try:
+        idx = int(str(label).strip()[-1])
+    except Exception:
+        idx = 2
+    if idx < 0:
+        idx = 0
+    if idx > 4:
+        idx = 4
+    return idx
+
+
+def five_label_to_lmh(label: str) -> str:
+    return _five_bin_to_lmh(_label_to_index(label))
+
+
+def representative_value_from_five_label(col: str, label: str) -> float:
+    df = _read_rotation_table()
+    edges = _get_default_edges(df, col)
+    i = _label_to_index(label)
+    i = max(0, min(4, i))
+    left = float(edges[i])
+    right = float(edges[i + 1])
+    return (left + right) / 2.0
+
+
+def ph_cat_to_band(cat: str) -> str:
+    i = _label_to_index(cat)
+    if i <= 0:
+        return "Acidic (5.0–5.9)"
+    if i == 1:
+        return "Neutral (6.0–7.3)"
+    return "Alkaline (7.4–8.5)"
+
+
+def ph_cat_to_value(cat: str) -> float:
+    band = ph_cat_to_band(cat)
+    return ph_band_to_value(band)
+
+
