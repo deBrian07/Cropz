@@ -15,7 +15,7 @@ from .schemas import (
     RotationScoreRes,
     RecommendAutoReq,
 )
-from .scoring import score_crops, score_specific_crops
+from .scoring import score_crops, score_specific_crops, infer_rotation_group
 from .rotation import (
     compute_rotation_options_from_categories,
     five_label_to_lmh,
@@ -23,17 +23,19 @@ from .rotation import (
     representative_value_from_five_label,
     ph_cat_to_value,
 )
-from .weather import get_weather_data_for_city_free
+from .weather import get_weather_data_for_city_free, get_weather_features
 from .weather_scoring import WeatherScorer
 import sys
 from pathlib import Path
+import math
+import statistics
 
 # Add the project root to Python path for ML imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
 
 try:
-    from ml.inference import get_crop_recommendations_with_reasons
+    from ml.inference import get_crop_recommendations_with_reasons, get_probs_for_crops_with_reasons
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
@@ -254,5 +256,108 @@ async def recommend_with_weather(req: WeatherRecommendRequest):
     except Exception as e:
         print(f"Error in weather-based recommendation: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/rotation/score-ml", response_model=RotationScoreRes)
+async def rotation_score_ml(req: RotationScoreReq):
+    """Score rotation crops per year using the ML model and numeric features.
+
+    Steps:
+    - Convert 0-5 soil levels to representative numeric N/P/K values (dataset-driven bin midpoints)
+    - Use provided pH (already numeric)
+    - Use geolocation to fetch temperature/humidity/rainfall via Open-Meteo
+    - Determine rotation options by L/M/H bands
+    - Score only the options for each year with the ML model and normalize within-year
+    """
+    if not ML_AVAILABLE:
+        return RotationScoreRes(year1=[], year2=[], year3=[], year4=[])
+
+    try:
+        soil = req.soil
+
+        # Derive rotation options from L/M/H bands
+        n_band = "High" if soil.nitrogen >= 4 else ("Medium" if soil.nitrogen >= 2 else "Low")
+        p_band = "High" if soil.phosphorus >= 4 else ("Medium" if soil.phosphorus >= 2 else "Low")
+        k_band = "High" if soil.potassium >= 4 else ("Medium" if soil.potassium >= 2 else "Low")
+        ph_band = "Acidic (5.0–5.9)" if soil.ph < 6.0 else ("Neutral (6.0–7.3)" if soil.ph <= 7.3 else "Alkaline (7.4–8.5)")
+        rot_opts = compute_rotation_options_from_categories(n_band, p_band, k_band, ph_band)
+
+        # Convert 0-5 categorical levels to numeric midpoints used by the ML model
+        def lvl_to_val(col: str, lvl: int) -> float:
+            if lvl < 0:
+                idx = 0
+            elif lvl > 4:
+                idx = 4
+            else:
+                idx = int(lvl)
+            label = f"{col}{idx}"
+            return representative_value_from_five_label(col, label)  # type: ignore[arg-type]
+
+        N_num = lvl_to_val("N", int(min(max(soil.nitrogen, 0), 5)))
+        P_num = lvl_to_val("P", int(min(max(soil.phosphorus, 0), 5)))
+        K_num = lvl_to_val("K", int(min(max(soil.potassium, 0), 5)))
+
+        # Fetch weather features for coordinates (fallback handled inside)
+        features = None
+        try:
+            if soil.latitude is not None and soil.longitude is not None:
+                features = get_weather_features(soil.latitude, soil.longitude)
+        except Exception:
+            features = None
+
+        temperature = getattr(features, "temperature", 22.0)
+        humidity = getattr(features, "humidity", 65.0)
+        rainfall = getattr(features, "rainfall", 2.0)
+
+        # Build ML feature payload
+        ml_payload = {
+            "N": N_num,
+            "P": P_num,
+            "K": K_num,
+            "temperature": float(temperature),
+            "humidity": float(humidity),
+            "ph": float(soil.ph),
+            "rainfall": float(rainfall),
+        }
+
+        def _curve_percentages(vals: list[float], floor: float = 60.0, ceiling: float = 99.0) -> list[float]:
+            if not vals:
+                return []
+            mu = statistics.mean(vals)
+            sigma = statistics.pstdev(vals) if len(vals) > 1 else 0.0
+            if sigma <= 1e-9:
+                # All same → flat curve around mid of range
+                mid = (floor + ceiling) / 2.0
+                return [mid for _ in vals]
+            out: list[float] = []
+            for v in vals:
+                z = (v - mu) / sigma
+                cdf = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+                curved = floor + (ceiling - floor) * cdf
+                out.append(curved)
+            return out
+
+        def score_year(options: list[str]):
+            if not options:
+                return []
+            scored = get_probs_for_crops_with_reasons(ml_payload, options)
+            raw_percents = [float(s.get("percent", 0.0)) for s in scored]
+            curved_percents = _curve_percentages(raw_percents, floor=60.0, ceiling=99.0)
+            out: list[ScoredCrop] = []
+            for s, curved in zip(scored, curved_percents):
+                group = infer_rotation_group(s["crop"])  # map to rotation group
+                pct_int = int(min(100, round(curved)))
+                out.append(ScoredCrop(crop=s["crop"].title(), match_pct=pct_int, rotation_group=group))
+            return out
+
+        y1 = score_year(rot_opts.get("Year1_options", []))
+        y2 = score_year(rot_opts.get("Year2_options", []))
+        y3 = score_year(rot_opts.get("Year3_options", []))
+        y4 = score_year(rot_opts.get("Year4_options", []))
+
+        return RotationScoreRes(year1=y1, year2=y2, year3=y3, year4=y4)
+    except Exception as e:
+        print(f"Error in rotation/score-ml endpoint: {e}")
+        return RotationScoreRes(year1=[], year2=[], year3=[], year4=[])
 
 

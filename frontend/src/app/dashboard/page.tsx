@@ -315,7 +315,7 @@ export default function Dashboard() {
       };
 
       const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-      const resp = await fetch(`${base}/rotation/score`, {
+      const resp = await fetch(`${base}/rotation/score-ml`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ soil }),
