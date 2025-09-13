@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { auth, rtdb } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { get, ref, set, update, remove } from "firebase/database";
 import SoilTextureWizard, { SoilTextureWizardResult } from "@/components/SoilTextureWizard";
 import Modal from "@/components/Modal";
-import { fetchLocationInBackground } from "@/lib/geolocation";
+import { fetchLocationInBackground, getCurrentLocation } from "@/lib/geolocation";
 
 type Land = {
   id: string;
@@ -18,6 +19,7 @@ type Land = {
 };
 
 export default function Dashboard() {
+  const router = useRouter();
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uid, setUid] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [tempPH, setTempPH] = useState<string>("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [recommending, setRecommending] = useState(false);
 
   useEffect(() => {
     if (!auth) {
@@ -236,6 +239,113 @@ export default function Dashboard() {
       }
     } catch (e: any) {
       console.warn("Failed to delete land:", e?.code ?? e?.name, e?.message);
+    }
+  };
+
+  const mapPHCategoryToValue = (cat: string | undefined): number | null => {
+    if (!cat) return null;
+    if (cat.includes("Acidic")) return 5.5;
+    if (cat.includes("Neutral")) return 6.7;
+    if (cat.includes("Alkaline")) return 7.8;
+    return null;
+  };
+
+  const mapSoilTypeToBackend = (soilType: string | undefined): ("sandy"|"clay"|"silt"|"peat"|"chalk"|"loam") | null => {
+    if (!soilType) return null;
+    const s = soilType.toLowerCase();
+    if (s.includes("clay")) return "clay";
+    if (s.includes("silt")) return "silt";
+    if (s.includes("sand")) return "sandy";
+    if (s.includes("peat")) return "peat";
+    if (s.includes("chalk")) return "chalk";
+    if (s.includes("loam")) return "loam";
+    return null;
+  };
+
+  const handleRecommend = async () => {
+    if (!activeLandId) return;
+    const active = lands.find((l) => l.id === activeLandId);
+    if (!active) return;
+
+    // Ensure required inputs exist
+    if (!active.nitrogen || !active.phosphorus || !active.potassium || !active.pH) {
+      setLandStep("nutrients");
+      return;
+    }
+
+    const nitrogen = parseInt(active.nitrogen, 10);
+    const phosphorus = parseInt(active.phosphorus, 10);
+    const potassium = parseInt(active.potassium, 10);
+    const ph = mapPHCategoryToValue(active.pH);
+    if (Number.isNaN(nitrogen) || Number.isNaN(phosphorus) || Number.isNaN(potassium) || ph === null) {
+      setLandStep("nutrients");
+      return;
+    }
+
+    setRecommending(true);
+    try {
+      // Get geolocation (fallback to last known if available)
+      let latitude: number | undefined = undefined;
+      let longitude: number | undefined = undefined;
+      try {
+        const loc = await getCurrentLocation();
+        latitude = loc.latitude;
+        longitude = loc.longitude;
+      } catch {
+        try {
+          const last = (window as any).lastKnownLocation;
+          if (last) {
+            latitude = last.latitude;
+            longitude = last.longitude;
+          }
+        } catch {}
+      }
+
+      const soil: any = {
+        latitude,
+        longitude,
+        soil_type: mapSoilTypeToBackend(active.soilType) ?? undefined,
+        ph,
+        nitrogen,
+        phosphorus,
+        potassium,
+        has_tractor: false,
+        irrigation: false,
+        easy_maintenance_preference: 3,
+      };
+
+      const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const resp = await fetch(`${base}/rotation/score`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ soil }),
+      });
+      const results = await resp.json();
+
+      // Persist results for the recommendations page
+      try {
+        sessionStorage.setItem("cropz.rotationScores", JSON.stringify(results));
+        sessionStorage.setItem(
+          "cropz.rotationScores.meta",
+          JSON.stringify({
+            landId: active.id,
+            landName: active.name,
+            soilType: active.soilType,
+            N: active.nitrogen,
+            P: active.phosphorus,
+            K: active.potassium,
+            pH: active.pH,
+            latitude,
+            longitude,
+          })
+        );
+      } catch {}
+
+      router.push("/recommendations");
+    } catch (e) {
+      console.warn("Failed to get recommendations", e);
+    } finally {
+      setRecommending(false);
     }
   };
 
@@ -520,9 +630,11 @@ export default function Dashboard() {
                             </button>
                             
                             <button 
-                              className="px-8 py-4 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+                              onClick={handleRecommend}
+                              disabled={recommending}
+                              className={`px-8 py-4 rounded-lg text-white font-semibold ${recommending ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
                             >
-                              🌱 Recommend Best Crops
+                              {recommending ? "Calculating..." : "🌱 Recommend Best Crops"}
                             </button>
                           </div>
                         )}
