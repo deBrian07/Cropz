@@ -116,7 +116,17 @@ function predictSoilTexture(answers: Answers): PredictionResult | null {
   return null;
 }
 
-export default function SoilTextureWizard() {
+export interface SoilTextureWizardResult {
+  texture: string;
+  explanation: string;
+  answers: Answers;
+}
+
+interface SoilTextureWizardProps {
+  onComplete?: (result: SoilTextureWizardResult) => void;
+}
+
+export default function SoilTextureWizard({ onComplete }: SoilTextureWizardProps) {
   const [answers, setAnswers] = useState<Answers>({});
 
   const currentStep: WizardStep = useMemo(() => {
@@ -308,6 +318,14 @@ export default function SoilTextureWizard() {
             <button onClick={reset} className="px-4 py-2 rounded-lg border">
               Start a new assessment
             </button>
+            {onComplete && (
+              <button
+                onClick={() => onComplete({ texture: prediction.texture, explanation: prediction.explanation, answers })}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+              >
+                Save soil type
+              </button>
+            )}
           </div>
 
           <p className="mt-6 text-xs text-gray-500">
