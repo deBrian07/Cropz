@@ -88,6 +88,8 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rtdb, uid]);
 
+  // Reset step and sync temp fields only when the active land changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!activeLandId) return;
     setLandStep("overview");
@@ -96,7 +98,7 @@ export default function Dashboard() {
     setTempPhosphorus(land?.phosphorus !== undefined ? String(land.phosphorus) : "");
     setTempPotassium(land?.potassium !== undefined ? String(land.potassium) : "");
     setTempPH(land?.pH !== undefined ? String(land.pH) : "");
-  }, [activeLandId, lands]);
+  }, [activeLandId]);
 
   if (loading) return null;
 
