@@ -15,6 +15,49 @@ export interface LocationError {
   message: string;
 }
 
+const LAST_KNOWN_LOCATION_KEY = "cropz.lastKnownLocation";
+let hasLoggedBackgroundLocationError = false;
+
+function isValidCoordinate(latitude: number | undefined, longitude: number | undefined): boolean {
+  if (typeof latitude !== "number" || typeof longitude !== "number") return false;
+  if (Number.isNaN(latitude) || Number.isNaN(longitude)) return false;
+  if (latitude < -90 || latitude > 90) return false;
+  if (longitude < -180 || longitude > 180) return false;
+  return true;
+}
+
+export function loadLastKnownLocation(maxAgeMs?: number): LocationData | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.sessionStorage?.getItem(LAST_KNOWN_LOCATION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LocationData;
+    if (!isValidCoordinate(parsed?.latitude, parsed?.longitude)) return null;
+    if (typeof maxAgeMs === "number" && parsed?.timestamp) {
+      const age = Date.now() - parsed.timestamp;
+      if (age > maxAgeMs) return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLastKnownLocation(location: LocationData): void {
+  try {
+    if (typeof window === "undefined") return;
+    if (!isValidCoordinate(location?.latitude, location?.longitude)) return;
+    const withTimestamp: LocationData = {
+      ...location,
+      timestamp: location.timestamp ?? Date.now(),
+    };
+    try {
+      window.sessionStorage?.setItem(LAST_KNOWN_LOCATION_KEY, JSON.stringify(withTimestamp));
+    } catch {}
+    (window as any).lastKnownLocation = withTimestamp;
+  } catch {}
+}
+
 /**
  * Get current location using the browser's geolocation API
  * @returns Promise<LocationData> - Location coordinates and accuracy
@@ -89,12 +132,17 @@ export async function fetchLocationInBackground(): Promise<void> {
     console.log(`   🎯 Accuracy: ${location.accuracy?.toFixed(0)} meters`);
     console.log(`   ⏰ Timestamp: ${new Date(location.timestamp || Date.now()).toLocaleString()}`);
     
-    // Store location in a global variable for potential future use
-    if (typeof window !== 'undefined') {
-      (window as any).lastKnownLocation = location;
-    }
+    // Persist last known location (session-only) and set global for immediate use
+    saveLastKnownLocation(location);
     
   } catch (error) {
-    console.error('❌ [Background] Location error:', getLocationErrorText(error as LocationError));
+    const message = getLocationErrorText(error as LocationError);
+    // Avoid red error overlay noise in dev; warn once per session only
+    if (!hasLoggedBackgroundLocationError) {
+      console.warn('⚠️ [Background] Location error:', message);
+      hasLoggedBackgroundLocationError = true;
+    } else {
+      console.debug('[Background] Location error (suppressed):', message);
+    }
   }
 }

@@ -37,21 +37,23 @@ export default function Home() {
           }}
         />
         
-        {/* Floating particles */}
-        <div className="absolute inset-0">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-1 w-1 rounded-full bg-emerald-400/40 animate-ping"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
-              }}
-            />
-          ))}
-        </div>
+        {/* Floating particles (client-only to avoid hydration mismatch) */}
+        {isLoaded && (
+          <div className="absolute inset-0">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute h-1 w-1 rounded-full bg-emerald-400/40 animate-ping"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="w-full max-w-4xl">
@@ -107,8 +109,8 @@ export default function Home() {
               {/* Action buttons */}
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <div className="group/btn">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-lime-500 rounded-full blur opacity-30 group-hover/btn:opacity-50 transition duration-300"></div>
+                  <div className="group/btn relative">
+                    <div className="pointer-events-none absolute -inset-1 bg-gradient-to-r from-emerald-500 to-lime-500 rounded-full blur opacity-30 group-hover/btn:opacity-50 transition duration-300"></div>
                     <AuthButton />
                   </div>
                 </div>

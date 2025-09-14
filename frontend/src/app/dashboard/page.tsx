@@ -6,7 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { get, ref, set, update, remove } from "firebase/database";
 import SoilTextureWizard, { SoilTextureWizardResult } from "@/components/SoilTextureWizard";
 import Modal from "@/components/Modal";
-import { fetchLocationInBackground, getCurrentLocation } from "@/lib/geolocation";
+import { fetchLocationInBackground, getCurrentLocation, loadLastKnownLocation } from "@/lib/geolocation";
 
 type Land = {
   id: string;
@@ -325,18 +325,12 @@ export default function Dashboard() {
           latitude = loc.latitude;
           longitude = loc.longitude;
         } catch (error) {
-          // Fallback to last known location
-          try {
-            const last = (window as any).lastKnownLocation;
-            if (last) {
-              latitude = last.latitude;
-              longitude = last.longitude;
-            } else {
-              setLocationError("Unable to get your location. Please switch to manual mode and enter coordinates.");
-              setRecommending(false);
-              return;
-            }
-          } catch {
+          // Fallback to trusted last known location (validated, session-scoped)
+          const last = loadLastKnownLocation(24 * 60 * 60 * 1000);
+          if (last) {
+            latitude = last.latitude;
+            longitude = last.longitude;
+          } else {
             setLocationError("Unable to get your location. Please switch to manual mode and enter coordinates.");
             setRecommending(false);
             return;
@@ -410,21 +404,23 @@ export default function Dashboard() {
           }}
         />
         
-        {/* Floating particles */}
-        <div className="absolute inset-0">
-          {[...Array(15)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-1 w-1 rounded-full bg-emerald-400/30 animate-ping"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 2}s`,
-              }}
-            />
-          ))}
-        </div>
+        {/* Floating particles (client-only to avoid hydration mismatch) */}
+        {isLoaded && (
+          <div className="absolute inset-0">
+            {[...Array(15)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute h-1 w-1 rounded-full bg-emerald-400/30 animate-ping"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Header Section */}
